@@ -1,0 +1,89 @@
+---
+title: Using M.2 Connectors for SparkFun MicroMod Modules
+sidebar_position: 6
+description: How to design SparkFun MicroMod processor and carrier boards using standard M.2 E-key 67-pin connectors in tscircuit.
+---
+
+# Using M.2 Connectors for SparkFun MicroMod Modules
+
+The **SparkFun MicroMod** ecosystem uses a standard **M.2 (NGFF) 67-pin E-Key connector** (0.5mm pitch) with a 22x22mm processor board form factor and an M2.5 standoff screw to make microcontrollers interchangeable across carrier boards.
+
+## 1. MicroMod M.2 Pinout Overview
+
+The MicroMod standard assigns fixed bus functions across the 67-pin M.2 E-Key edge connector:
+
+| Function | M.2 Pins | Typical Signal Names |
+| --- | --- | --- |
+| Power & Ground | `1, 2, 3, 4, 33, 39, 57, 63, 75` | `3V3`, `VIN`, `VBATT`, `GND` |
+| USB | `5, 7` | `USB_D+`, `USB_D-` |
+| UART | `17, 19, 20, 22` | `TX1`, `RX1`, `RTS1`, `CTS1` |
+| I2C | `12, 14, 16` | `I2C_SDA`, `I2C_SCL`, `I2C_INT` |
+| SPI | `51, 53, 55, 57` | `SPI_SCK`, `SPI_COPI`, `SPI_CIPO`, `SPI_CS` |
+| Analog / GPIO / PWM | `10, 18, 32, 34, 38, 40–48` | `A0`, `A1`, `D0`, `D1`, `PWM0`, `PWM1` |
+
+## 2. Defining a MicroMod M.2 Carrier Connector in tscircuit
+
+You can create a reusable `<MicroModM2Connector />` component using `<chip />` and a custom `<footprint />` for the 67-pin 0.5mm pitch SMD M.2 socket:
+
+```tsx
+export const MicroModM2Connector = ({ name = "J1" }: { name?: string }) => (
+  <chip
+    name={name}
+    pinLabels={{
+      pin1: "GND1",
+      pin2: "3V3",
+      pin4: "VIN",
+      pin5: "USB_DP",
+      pin7: "USB_DM",
+      pin12: "I2C_SDA",
+      pin14: "I2C_SCL",
+      pin17: "UART_TX1",
+      pin19: "UART_RX1",
+      pin51: "SPI_SCK",
+      pin53: "SPI_COPI",
+      pin55: "SPI_CIPO",
+      pin57: "SPI_CS",
+    }}
+    footprint={
+      <footprint>
+        {Array.from({ length: 34 }, (_, i) => {
+          const pinNum = i * 2 + 1
+          if (pinNum >= 25 && pinNum <= 31) return null // E-Key notch
+          return (
+            <smtpad
+              key={pinNum}
+              portHints={[`pin${pinNum}`]}
+              shape="rect"
+              width="0.3mm"
+              height="1.5mm"
+              pcbX={`${(i - 16.5) * 0.5}mm`}
+              pcbY="-2.0mm"
+            />
+          )
+        })}
+        <platedhole
+          portHints={["mount_standoff"]}
+          shape="circle"
+          outerDiameter="4.5mm"
+          holeDiameter="2.7mm"
+          pcbX="0mm"
+          pcbY="20mm"
+        />
+      </footprint>
+    }
+  />
+)
+```
+
+## 3. Connecting Peripherals on a Carrier Board
+
+```tsx
+export default () => (
+  <board width="50mm" height="50mm">
+    <MicroModM2Connector name="J1" />
+    <capacitor name="C1" capacitance="10uF" footprint="0805" />
+    <trace from=".J1 > .3V3" to=".C1 > .pos" />
+    <trace from=".J1 > .GND1" to=".C1 > .neg" />
+  </board>
+)
+```
