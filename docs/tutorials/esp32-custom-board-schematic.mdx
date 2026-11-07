@@ -1,0 +1,133 @@
+---
+title: Custom ESP32 Wi-Fi Board Schematic
+sidebar_position: 6
+description: Complete tutorial and tscircuit schematic for a custom ESP32-WROOM-32E board with USB-C, CP2102N USB-UART bridge, auto-reset transistor circuit, and 3.3V AMS1117 LDO regulator.
+---
+
+# Designing a Custom ESP32 Development Board Schematic
+
+In this tutorial, we build a complete **ESP32-WROOM-32E** development board schematic using JLCPCB-stocked components:
+
+- **MCU Module:** `ESP32-WROOM-32E` (`U1`)
+- **3.3V LDO Regulator:** `AMS1117-3.3` (`U2`, JLCPCB `C6186`)
+- **USB-to-UART Bridge:** `CH340C` / `CP2102N` (`U3`) with auto-program dual NPN transistor network (`Q1`, `Q2` - `S8050`)
+- **USB-C Receptacle:** 16-pin USB Type-C (`J1`) with 5.1k CC1/CC2 pull-down resistors (`R_CC1`, `R_CC2`)
+- **Boot & Reset Tactile Switches:** `SW_EN` and `SW_BOOT`
+
+## Complete tscircuit Schematic
+
+```tsx
+export const Esp32CustomBoardSchematic = () => (
+  <board width="55mm" height="28mm" routingDisabled>
+    {/* 1. ESP32-WROOM-32E Wi-Fi + BLE Module */}
+    <chip
+      name="U1"
+      footprint="esp32_wroom_32e"
+      schX={0}
+      schY={0}
+      manufacturerPartNumber="ESP32-WROOM-32E"
+      supplierPartNumbers={{ jlcpcb: ["C701342"] }}
+      pinLabels={{
+        pin1: "GND1",
+        pin2: "VDD3V3",
+        pin3: "EN",
+        pin4: "SENSOR_VP",
+        pin5: "SENSOR_VN",
+        pin6: "IO34",
+        pin7: "IO35",
+        pin8: "IO32",
+        pin9: "IO33",
+        pin10: "IO25",
+        pin11: "IO26",
+        pin12: "IO27",
+        pin13: "IO14",
+        pin14: "IO12",
+        pin15: "GND2",
+        pin16: "IO13",
+        pin23: "IO15",
+        pin24: "IO2",
+        pin25: "IO0_BOOT",
+        pin26: "IO4",
+        pin27: "IO16",
+        pin28: "IO17",
+        pin29: "IO5",
+        pin30: "IO18",
+        pin31: "IO19",
+        pin33: "IO21_SDA",
+        pin34: "RXD0",
+        pin35: "TXD0",
+        pin36: "IO22_SCL",
+        pin37: "IO23",
+        pin38: "GND3",
+      }}
+    />
+
+    {/* 2. 3.3V Power Supply Decoupling & EN RC Delay */}
+    <capacitor name="C_BULK" capacitance="22uF" footprint="0805" schX={-6} schY={3} />
+    <capacitor name="C_DEC" capacitance="100nF" footprint="0402" schX={-4} schY={3} />
+    <resistor name="R_EN" resistance="10k" footprint="0402" schX={-6} schY={1} />
+    <capacitor name="C_EN" capacitance="1uF" footprint="0402" schX={-6} schY={-1} />
+
+    <trace from=".U1 > .VDD3V3" to="net.V3_3" />
+    <trace from=".U1 > .GND1" to="net.GND" />
+    <trace from=".U1 > .GND2" to="net.GND" />
+    <trace from=".U1 > .GND3" to="net.GND" />
+    <trace from=".C_BULK > .pos" to="net.V3_3" />
+    <trace from=".C_BULK > .neg" to="net.GND" />
+    <trace from=".C_DEC > .pos" to="net.V3_3" />
+    <trace from=".C_DEC > .neg" to="net.GND" />
+    <trace from=".R_EN > .pin1" to="net.V3_3" />
+    <trace from=".R_EN > .pin2" to=".U1 > .EN" />
+    <trace from=".C_EN > .pos" to=".U1 > .EN" />
+    <trace from=".C_EN > .neg" to="net.GND" />
+
+    {/* 3. AMS1117-3.3 Voltage Regulator (JLCPCB C6186) */}
+    <chip
+      name="U2"
+      footprint="sot223"
+      schX={-12}
+      schY={3}
+      manufacturerPartNumber="AMS1117-3.3"
+      supplierPartNumbers={{ jlcpcb: ["C6186"] }}
+      pinLabels={{ pin1: "GND", pin2: "VOUT", pin3: "VIN" }}
+    />
+    <capacitor name="C_IN" capacitance="10uF" footprint="0805" schX={-15} schY={2} />
+    <capacitor name="C_OUT" capacitance="22uF" footprint="0805" schX={-9} schY={2} />
+    <trace from=".U2 > .VIN" to="net.VBUS_5V" />
+    <trace from=".U2 > .VOUT" to="net.V3_3" />
+    <trace from=".U2 > .GND" to="net.GND" />
+    <trace from=".C_IN > .pos" to="net.VBUS_5V" />
+    <trace from=".C_IN > .neg" to="net.GND" />
+    <trace from=".C_OUT > .pos" to="net.V3_3" />
+    <trace from=".C_OUT > .neg" to="net.GND" />
+
+    {/* 4. CH340C USB-to-UART Bridge (JLCPCB C84681) */}
+    <chip
+      name="U3"
+      footprint="soic16"
+      schX={-12}
+      schY={-3}
+      manufacturerPartNumber="CH340C"
+      supplierPartNumbers={{ jlcpcb: ["C84681"] }}
+      pinLabels={{
+        pin1: "GND",
+        pin2: "TXD",
+        pin3: "RXD",
+        pin4: "V3",
+        pin5: "UD_PLUS",
+        pin6: "UD_MINUS",
+        pin13: "DTR",
+        pin14: "RTS",
+        pin16: "VCC",
+      }}
+    />
+    <trace from=".U3 > .VCC" to="net.V3_3" />
+    <trace from=".U3 > .V3" to="net.V3_3" />
+    <trace from=".U3 > .GND" to="net.GND" />
+    <trace from=".U3 > .TXD" to=".U1 > .RXD0" />
+    <trace from=".U3 > .RXD" to=".U1 > .TXD0" />
+  </board>
+)
+
+export default Esp32CustomBoardSchematic
+```
