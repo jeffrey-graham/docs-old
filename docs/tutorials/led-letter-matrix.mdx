@@ -1,0 +1,104 @@
+---
+title: Drawing Any Capital Letter (A-Z) with SMD LEDs
+sidebar_position: 6
+---
+
+# Drawing Any Letter (A–Z) with 0603 SMD LEDs
+
+In this tutorial, we build a reusable `<LedLetter />` component that renders any capital letter `A`–`Z` on a PCB and schematic using `0603` SMD LEDs and current-limiting resistors.
+
+## 5×7 Font Bitmap Map (`A`–`Z`)
+
+Each letter is encoded as 7 rows of 5-bit binary masks (`1` = place LED, `0` = empty), which we mathematically map to `(pcbX, pcbY)` and `(schX, schY)` coordinates.
+
+```tsx
+const FONT_5X7: Record<string, number[]> = {
+  A: [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+  B: [0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110],
+  C: [0b01110, 0b10001, 0b10000, 0b10000, 0b10000, 0b10001, 0b01110],
+  D: [0b11100, 0b10010, 0b10001, 0b10001, 0b10001, 0b10010, 0b11100],
+  E: [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
+  F: [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b10000],
+  G: [0b01110, 0b10001, 0b10000, 0b10111, 0b10001, 0b10001, 0b01110],
+  H: [0b10001, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+  I: [0b01110, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
+  J: [0b00111, 0b00010, 0b00010, 0b00010, 0b10010, 0b10010, 0b01100],
+  K: [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
+  L: [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111],
+  M: [0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001],
+  N: [0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001],
+  O: [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+  P: [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
+  Q: [0b01110, 0b10001, 0b10001, 0b10001, 0b10101, 0b10010, 0b01101],
+  R: [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001],
+  S: [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110],
+  T: [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
+  U: [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
+  V: [0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01010, 0b00100],
+  W: [0b10001, 0b10001, 0b10001, 0b10101, 0b10101, 0b11011, 0b10001],
+  X: [0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001],
+  Y: [0b10001, 0b10001, 0b01010, 0b00100, 0b00100, 0b00100, 0b00100],
+  Z: [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b10000, 0b11111],
+}
+
+export interface LedLetterProps {
+  letter: keyof typeof FONT_5X7
+  power: string
+  gnd: string
+  pitchMm?: number
+}
+
+export const LedLetter = ({
+  letter,
+  power,
+  gnd,
+  pitchMm = 3.5,
+}: LedLetterProps) => {
+  const rows = FONT_5X7[letter.toUpperCase()] ?? FONT_5X7.A
+  const cells: Array<{ r: number; c: number; idx: number }> = []
+  let idx = 1
+  rows.forEach((mask, r) => {
+    for (let c = 0; c < 5; c++) {
+      if ((mask >> (4 - c)) & 1) {
+        cells.push({ r, c, idx: idx++ })
+      }
+    }
+  })
+
+  return (
+    <group>
+      {cells.map(({ r, c, idx }) => {
+        const pcbX = (c - 2) * pitchMm
+        const pcbY = (3 - r) * pitchMm
+        const schX = (c - 2) * 3
+        const schY = (3 - r) * 2.5
+        return (
+          <group key={`cell_${idx}`}>
+            <resistor
+              name={`R_${letter}${idx}`}
+              resistance="330"
+              footprint="0402"
+              pcbX={pcbX}
+              pcbY={pcbY + 1.2}
+              schX={schX - 0.8}
+              schY={schY}
+            />
+            <led
+              name={`LED_${letter}${idx}`}
+              footprint="0603"
+              color="red"
+              pcbX={pcbX}
+              pcbY={pcbY}
+              schX={schX + 0.8}
+              schY={schY}
+            />
+            <trace from={`.R_${letter}${idx} > .pin1`} to={power} />
+            <trace from={`.R_${letter}${idx} > .pin2`} to={`.LED_${letter}${idx} > .anode`} />
+            <trace from={`.LED_${letter}${idx} > .cathode`} to={gnd} />
+          </group>
+        )
+      })}
+    </group>
+  )
+}
+```
