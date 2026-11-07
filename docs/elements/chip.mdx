@@ -1,0 +1,58 @@
+---
+title: <chip />
+sidebar_position: 1
+description: Define integrated circuits (ICs), microcontrollers, and multi-pin packages using <chip />.
+---
+
+# `<chip />`
+
+The `<chip />` element (also aliased as `<bug />` in older versions) represents any integrated circuit (IC), microcontroller, connector, or multi-pin electronic component on a board.
+
+## Basic Usage
+
+```tsx
+export default () => (
+  <board width="20mm" height="20mm">
+    <chip
+      name="U1"
+      footprint="soic8"
+      pinLabels={{
+        pin1: "VCC",
+        pin2: "SDA",
+        pin3: "SCL",
+        pin4: "GND",
+      }}
+    />
+  </board>
+)
+```
+
+## Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `name` | `string` | Reference designator for the chip (e.g., `"U1"`). |
+| `footprint` | `string \| ReactElement` | Standard footprint string (such as `"soic8"`, `"dip8"`, `"qfp32"`, `"tssop16"`) or a custom `<footprint>` element. |
+| `pinLabels` | `Record<string, string \| string[]>` | Maps physical pin numbers (`pin1`, `pin2`, ...) to semantic net/signal aliases (`"VCC"`, `"GND"`, `"SCK"`). |
+| `schPinArrangement` | `object` | Controls how pins are grouped on the left, right, top, and bottom sides of the schematic symbol. |
+| `externallyConnectedPins` | `string[][]` | Declares pins that are internally bridged inside the IC package so the autorouter can utilize internal connections. |
+| `supplierPartNumbers` | `Record<string, string[]>` | Maps suppliers (e.g. `jlcpcb`, `digikey`, `mouser`) to part numbers for BOM and PCBA export. |
+| `cadModel` | `object` | Optional 3D model configuration (OBJ/STL/STEP URL or JSCAD model) for `@tscircuit/3d-viewer`. |
+
+## Custom Schematic Pin Arrangement
+
+```tsx
+<chip
+  name="U1"
+  footprint="soic8"
+  pinLabels={{
+    pin1: "VCC",
+    pin4: "GND",
+    pin5: "OUT",
+  }}
+  schPinArrangement={{
+    leftSide: { direction: "top-to-bottom", pins: ["VCC", "GND"] },
+    rightSide: { direction: "top-to-bottom", pins: ["OUT"] },
+  }}
+/>
+```
