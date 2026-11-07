@@ -1,0 +1,96 @@
+---
+title: ESP32 Hardware Design Guidelines Reference Schematic
+sidebar_position: 4
+description: Official Espressif ESP32 reference schematic implemented in tscircuit with routingDisabled for instant schematic generation.
+---
+
+# ESP32 Reference Schematic (Espressif Hardware Design Guidelines)
+
+This guide implements the official [Espressif ESP32 Schematic Checklist](https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32/schematic-checklist.html) in tscircuit using `routingDisabled` on `<board />` for fast schematic-only rendering.
+
+## Checklist Highlights
+
+1. **Power Supply (`VDD33`, `VDD3P3_RTC`, `VDD3P3_CPU`, `VDD_SDIO`):** Decoupled with `10uF` + `0.1uF` capacitors (`C1`–`C6`) and a `3.3pF`/`0.1uF` RF matching network near `VDD3P3` (`pin3`, `pin4`).
+2. **Chip Enable (`CHIP_PU` / `EN`):** Pulled up to `3.3V` via `10k` resistor (`R1`) with a `1uF` delay capacitor (`C_EN`) to ground to guarantee `t_rst` power-on timing.
+3. **40 MHz Crystal Oscillator (`Y1`):** Connected to `XTAL_P` (`pin45`) and `XTAL_N` (`pin44`) with `22pF` load capacitors (`C_XTAL1`, `C_XTAL2`) and a `24nH` series inductor (`L1`).
+4. **External SPI Flash (`U_FLASH`):** Connected via `SD_CLK`, `SD_CMD`, and `SD_DATA0`–`SD_DATA3`.
+
+## tscircuit Reference Schematic
+
+```tsx
+export const Esp32ReferenceSchematic = () => (
+  <board width="60mm" height="60mm" routingDisabled>
+    <chip
+      name="U1"
+      footprint="qfn48"
+      schX={0}
+      schY={0}
+      manufacturerPartNumber="ESP32-D0WD-V3"
+      pinLabels={{
+        pin1: "VDDA1",
+        pin2: "LNA_IN",
+        pin3: "VDD3P3_1",
+        pin4: "VDD3P3_2",
+        pin9: "CHIP_PU",
+        pin19: "VDD3P3_RTC",
+        pin26: "VDD_SDIO",
+        pin37: "VDD3P3_CPU",
+        pin40: "U0RXD",
+        pin41: "U0TXD",
+        pin43: "VDDA2",
+        pin44: "XTAL_N",
+        pin45: "XTAL_P",
+        pin46: "VDDA3",
+        pin49: "GND_EPAD",
+      }}
+      schPinArrangement={{
+        leftSide: {
+          direction: "top-to-bottom",
+          pins: ["VDDA1", "VDD3P3_1", "VDD3P3_2", "VDD3P3_RTC", "VDD_SDIO", "VDD3P3_CPU", "VDDA2", "VDDA3", "CHIP_PU", "GND_EPAD"],
+        },
+        rightSide: {
+          direction: "top-to-bottom",
+          pins: ["LNA_IN", "XTAL_P", "XTAL_N", "U0TXD", "U0RXD"],
+        },
+      }}
+    />
+
+    {/* Power rail decoupling */}
+    <capacitor name="C1" capacitance="10uF" schX={-8} schY={4} />
+    <capacitor name="C2" capacitance="100nF" schX={-6} schY={4} />
+    <trace from=".U1 > .VDDA1" to="net.V3_3" />
+    <trace from=".U1 > .VDD3P3_1" to="net.V3_3" />
+    <trace from=".U1 > .VDD3P3_2" to="net.V3_3" />
+    <trace from=".U1 > .VDD3P3_RTC" to="net.V3_3" />
+    <trace from=".U1 > .VDD3P3_CPU" to="net.V3_3" />
+    <trace from=".U1 > .VDDA2" to="net.V3_3" />
+    <trace from=".U1 > .VDDA3" to="net.V3_3" />
+    <trace from=".U1 > .GND_EPAD" to="net.GND" />
+    <trace from=".C1 > .pos" to="net.V3_3" />
+    <trace from=".C1 > .neg" to="net.GND" />
+    <trace from=".C2 > .pos" to="net.V3_3" />
+    <trace from=".C2 > .neg" to="net.GND" />
+
+    {/* CHIP_PU (EN) Power-on Reset RC Network */}
+    <resistor name="R_PU" resistance="10k" schX={-6} schY={-2} />
+    <capacitor name="C_PU" capacitance="1uF" schX={-6} schY={-4} />
+    <trace from=".R_PU > .pin1" to="net.V3_3" />
+    <trace from=".R_PU > .pin2" to=".U1 > .CHIP_PU" />
+    <trace from=".C_PU > .pos" to=".U1 > .CHIP_PU" />
+    <trace from=".C_PU > .neg" to="net.GND" />
+
+    {/* 40MHz Crystal Oscillator */}
+    <crystal name="Y1" frequency="40MHz" loadCapacitance="12pF" schX={7} schY={0} />
+    <capacitor name="C_XTAL1" capacitance="22pF" schX={9} schY={1} />
+    <capacitor name="C_XTAL2" capacitance="22pF" schX={9} schY={-1} />
+    <trace from=".U1 > .XTAL_P" to=".Y1 > .pin1" />
+    <trace from=".U1 > .XTAL_N" to=".Y1 > .pin2" />
+    <trace from=".Y1 > .pin1" to=".C_XTAL1 > .pos" />
+    <trace from=".Y1 > .pin2" to=".C_XTAL2 > .pos" />
+    <trace from=".C_XTAL1 > .neg" to="net.GND" />
+    <trace from=".C_XTAL2 > .neg" to="net.GND" />
+  </board>
+)
+
+export default Esp32ReferenceSchematic
+```
