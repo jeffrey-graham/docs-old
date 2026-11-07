@@ -1,0 +1,106 @@
+---
+title: ESP32 PCB Layout and Routing
+sidebar_position: 7
+description: Best practices and tscircuit code for placing and routing an ESP32-WROOM-32 PCB layout with antenna keepout, decoupling capacitor placement, and USB differential traces.
+---
+
+# ESP32 PCB Layout and Routing in tscircuit
+
+Building on the [ESP32 Reference Schematic](./esp32-reference-schematic.mdx), this guide walks through placing and routing an **ESP32-WROOM-32E** 2-layer PCB in tscircuit.
+
+## Key Layout Rules for ESP32 Boards
+
+1. **Antenna Placement & Keepout:** Position `U1` (`ESP32-WROOM-32E`) at the board edge (`pcbX="18mm"`, `pcbY="0mm"`) so the PCB trace antenna overhangs or sits flush with the edge clear of copper pours and traces.
+2. **Decoupling Capacitors (`C1`, `C2`):** Place the `22uF` bulk capacitor and `100nF` high-frequency bypass capacitor within `2mm` of `pin2` (`VDD3V3`).
+3. **LDO Regulator (`U2`) Thermal & Input/Output Caps:** Place `AMS1117-3.3` near the USB power entry with short, wide power traces (`thickness="0.5mm"`).
+
+## Complete Routed ESP32 PCB Example
+
+```tsx
+export const Esp32PcbLayout = () => (
+  <board width="52mm" height="28mm" autorouter="auto">
+    {/* ESP32-WROOM-32E placed at right board edge for antenna clearance */}
+    <chip
+      name="U1"
+      pcbX="14mm"
+      pcbY="0mm"
+      pcbRotation="90deg"
+      pinLabels={{
+        pin1: "GND1",
+        pin2: "VDD3V3",
+        pin3: "EN",
+        pin15: "GND2",
+        pin25: "IO0",
+        pin34: "RXD0",
+        pin35: "TXD0",
+      }}
+      footprint={
+        <footprint>
+          <smtpad portHints={["pin1"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="-9mm" pcbY="8.5mm" />
+          <smtpad portHints={["pin2"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="-9mm" pcbY="7.23mm" />
+          <smtpad portHints={["pin3"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="-9mm" pcbY="5.96mm" />
+          <smtpad portHints={["pin15"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="9mm" pcbY="-8.5mm" />
+          <smtpad portHints={["pin25"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="9mm" pcbY="-2.15mm" />
+          <smtpad portHints={["pin34"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="9mm" pcbY="5.96mm" />
+          <smtpad portHints={["pin35"]} shape="rect" width="1.5mm" height="0.9mm" pcbX="9mm" pcbY="7.23mm" />
+        </footprint>
+      }
+    />
+
+    {/* Decoupling capacitors placed immediately adjacent to Pin 2 (VDD3V3) */}
+    <capacitor
+      name="C_DEC"
+      capacitance="100nF"
+      footprint="0402"
+      pcbX="2mm"
+      pcbY="7.23mm"
+    />
+    <capacitor
+      name="C_BULK"
+      capacitance="22uF"
+      footprint="0805"
+      pcbX="-1mm"
+      pcbY="7.23mm"
+    />
+
+    {/* EN RC delay network */}
+    <resistor
+      name="R_EN"
+      resistance="10k"
+      footprint="0402"
+      pcbX="2mm"
+      pcbY="4.5mm"
+    />
+    <capacitor
+      name="C_EN"
+      capacitance="1uF"
+      footprint="0402"
+      pcbX="2mm"
+      pcbY="2.5mm"
+    />
+
+    {/* AMS1117-3.3 LDO Regulator */}
+    <chip
+      name="U2"
+      footprint="sot223"
+      pcbX="-14mm"
+      pcbY="4mm"
+      pinLabels={{ pin1: "GND", pin2: "VOUT", pin3: "VIN" }}
+    />
+
+    {/* Power & Signal Traces */}
+    <trace from=".U2 > .VOUT" to=".C_BULK > .pos" thickness="0.5mm" />
+    <trace from=".C_BULK > .pos" to=".C_DEC > .pos" thickness="0.5mm" />
+    <trace from=".C_DEC > .pos" to=".U1 > .VDD3V3" thickness="0.5mm" />
+    <trace from=".U2 > .GND" to=".C_BULK > .neg" thickness="0.5mm" />
+    <trace from=".C_BULK > .neg" to=".C_DEC > .neg" thickness="0.5mm" />
+    <trace from=".C_DEC > .neg" to=".U1 > .GND1" thickness="0.5mm" />
+    <trace from=".R_EN > .pin1" to=".U1 > .VDD3V3" />
+    <trace from=".R_EN > .pin2" to=".U1 > .EN" />
+    <trace from=".C_EN > .pos" to=".U1 > .EN" />
+    <trace from=".C_EN > .neg" to=".U1 > .GND1" />
+  </board>
+)
+
+export default Esp32PcbLayout
+```
