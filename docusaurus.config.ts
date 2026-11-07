@@ -119,6 +119,12 @@ const config: Config = {
           position: 'right',
         },
         {
+          href: 'https://discord.com/invite/V7FGE5ZCbA',
+          position: 'right',
+          className: 'header-discord-link',
+          'aria-label': 'Discord server',
+        },
+        {
           href: 'https://github.com/tscircuit/tscircuit',
           position: 'right',
           className: 'header-github-link',
