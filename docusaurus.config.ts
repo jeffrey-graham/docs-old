@@ -29,6 +29,7 @@ const config: Config = {
           path: 'docs',
           routeBasePath: 'docs',
           sidebarPath: './sidebars.ts',
+          editUrl: 'https://github.com/tscircuit/docs/tree/main/',
         },
         blog: {
           showReadingTime: true,
@@ -55,6 +56,7 @@ const config: Config = {
         path: 'api-reference',
         routeBasePath: 'api-reference',
         sidebarPath: './sidebars.ts',
+        editUrl: 'https://github.com/tscircuit/docs/tree/main/',
       },
     ],
   ],
