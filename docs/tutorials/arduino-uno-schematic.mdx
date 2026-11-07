@@ -1,0 +1,140 @@
+---
+title: Designing an Arduino Uno Schematic
+sidebar_position: 5
+description: Step-by-step tutorial building a complete Arduino Uno R3 schematic in tscircuit with ATmega328P, voltage regulation, crystal oscillator, and pin headers.
+---
+
+# Designing an Arduino Uno Schematic in tscircuit
+
+In this tutorial, we build the schematic for an **Arduino Uno R3** using tscircuit. We will model the core blocks:
+
+1. **ATmega328P-PU** Microcontroller (`U1`) with 16 MHz crystal oscillator (`Y1`) and load capacitors (`C1`, `C2`).
+2. **5V LDO Voltage Regulator** (`U2` - NCP1117ST50T3G) with decoupling capacitors (`C3`, `C4`).
+3. **Reset Circuit** with pull-up resistor (`R1`) and tactile reset switch (`SW1`).
+4. **Power, Analog, and Digital Pin Headers** (`J_PWR`, `J_AD`, `J_DIG_LOW`, `J_DIG_HIGH`).
+5. **Status & Pin 13 LEDs** (`D_ON`, `D_L`).
+
+## Complete Arduino Uno Schematic Code
+
+```tsx
+export const ArduinoUnoSchematic = () => (
+  <board width="68.6mm" height="53.4mm">
+    {/* 1. ATmega328P Microcontroller */}
+    <chip
+      name="U1"
+      footprint="dip28"
+      schX={0}
+      schY={0}
+      pinLabels={{
+        pin1: "PC6_RESET",
+        pin2: "PD0_RXD",
+        pin3: "PD1_TXD",
+        pin4: "PD2_INT0",
+        pin5: "PD3_INT1",
+        pin6: "PD4",
+        pin7: "VCC",
+        pin8: "GND1",
+        pin9: "PB6_XTAL1",
+        pin10: "PB7_XTAL2",
+        pin11: "PD5",
+        pin12: "PD6",
+        pin13: "PD7",
+        pin14: "PB0_D8",
+        pin15: "PB1_D9",
+        pin16: "PB2_SS",
+        pin17: "PB3_MOSI",
+        pin18: "PB4_MISO",
+        pin19: "PB5_SCK",
+        pin20: "AVCC",
+        pin21: "AREF",
+        pin22: "GND2",
+        pin23: "PC0_A0",
+        pin24: "PC1_A1",
+        pin25: "PC2_A2",
+        pin26: "PC3_A3",
+        pin27: "PC4_SDA",
+        pin28: "PC5_SCL",
+      }}
+      schPinArrangement={{
+        leftSide: {
+          direction: "top-to-bottom",
+          pins: ["PC6_RESET", "VCC", "AVCC", "AREF", "PB6_XTAL1", "PB7_XTAL2", "GND1", "GND2"],
+        },
+        rightSide: {
+          direction: "top-to-bottom",
+          pins: [
+            "PD0_RXD", "PD1_TXD", "PD2_INT0", "PD3_INT1", "PD4", "PD5", "PD6", "PD7",
+            "PB0_D8", "PB1_D9", "PB2_SS", "PB3_MOSI", "PB4_MISO", "PB5_SCK",
+            "PC0_A0", "PC1_A1", "PC2_A2", "PC3_A3", "PC4_SDA", "PC5_SCL",
+          ],
+        },
+      }}
+    />
+
+    {/* 2. 16 MHz Crystal Oscillator & Load Capacitors */}
+    <crystal name="Y1" frequency="16MHz" loadCapacitance="18pF" schX={-6} schY={-1} />
+    <capacitor name="C1" capacitance="22pF" schX={-8} schY={-2} />
+    <capacitor name="C2" capacitance="22pF" schX={-8} schY={0} />
+    <trace from=".U1 > .PB6_XTAL1" to=".Y1 > .pin1" />
+    <trace from=".U1 > .PB7_XTAL2" to=".Y1 > .pin2" />
+    <trace from=".Y1 > .pin1" to=".C1 > .pos" />
+    <trace from=".Y1 > .pin2" to=".C2 > .pos" />
+    <trace from=".C1 > .neg" to="net.GND" />
+    <trace from=".C2 > .neg" to="net.GND" />
+
+    {/* 3. Reset Pull-Up & Decoupling */}
+    <resistor name="R1" resistance="10k" schX={-5} schY={4} />
+    <capacitor name="C_DEC1" capacitance="100nF" schX={-3} schY={2} />
+    <trace from=".R1 > .pin1" to="net.V5" />
+    <trace from=".R1 > .pin2" to=".U1 > .PC6_RESET" />
+    <trace from=".U1 > .VCC" to="net.V5" />
+    <trace from=".U1 > .AVCC" to="net.V5" />
+    <trace from=".U1 > .GND1" to="net.GND" />
+    <trace from=".U1 > .GND2" to="net.GND" />
+    <trace from=".C_DEC1 > .pos" to="net.V5" />
+    <trace from=".C_DEC1 > .neg" to="net.GND" />
+
+    {/* 4. 5V LDO Regulator */}
+    <chip
+      name="U2"
+      footprint="sot223"
+      schX={-12}
+      schY={4}
+      pinLabels={{ pin1: "GND", pin2: "VOUT", pin3: "VIN" }}
+    />
+    <capacitor name="C3" capacitance="47uF" schX={-15} schY={3} />
+    <capacitor name="C4" capacitance="47uF" schX={-9} schY={3} />
+    <trace from=".U2 > .VIN" to="net.VIN" />
+    <trace from=".U2 > .VOUT" to="net.V5" />
+    <trace from=".U2 > .GND" to="net.GND" />
+    <trace from=".C3 > .pos" to="net.VIN" />
+    <trace from=".C3 > .neg" to="net.GND" />
+    <trace from=".C4 > .pos" to="net.V5" />
+    <trace from=".C4 > .neg" to="net.GND" />
+
+    {/* 5. Pin 13 Indicator LED */}
+    <resistor name="R_LED" resistance="1k" schX={6} schY={0} />
+    <led name="D_L" color="yellow" schX={8} schY={0} />
+    <trace from=".U1 > .PB5_SCK" to=".R_LED > .pin1" />
+    <trace from=".R_LED > .pin2" to=".D_L > .anode" />
+    <trace from=".D_L > .cathode" to="net.GND" />
+
+    {/* 6. Analog Header (A0-A5) */}
+    <pinheader
+      name="J_AD"
+      pinCount={6}
+      schX={6}
+      schY={-4}
+      pinLabels={["A0", "A1", "A2", "A3", "SDA", "SCL"]}
+    />
+    <trace from=".U1 > .PC0_A0" to=".J_AD > .A0" />
+    <trace from=".U1 > .PC1_A1" to=".J_AD > .A1" />
+    <trace from=".U1 > .PC2_A2" to=".J_AD > .A2" />
+    <trace from=".U1 > .PC3_A3" to=".J_AD > .A3" />
+    <trace from=".U1 > .PC4_SDA" to=".J_AD > .SDA" />
+    <trace from=".U1 > .PC5_SCL" to=".J_AD > .SCL" />
+  </board>
+)
+
+export default ArduinoUnoSchematic
+```
